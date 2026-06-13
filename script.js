@@ -1,44 +1,52 @@
 let mediaRecorder;
 let audioChunks = [];
+let stream;
+let isRecording = false;
 
 const recordBtn = document.getElementById("recordBtn");
 const audio = document.getElementById("audio");
 
-let stream;
+recordBtn.addEventListener("click", async () => {
 
-recordBtn.addEventListener("mousedown", async () => {
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  if (!isRecording) {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
 
-    mediaRecorder.start();
-    console.log("Recording started...");
+      mediaRecorder.start();
+      isRecording = true;
 
-    mediaRecorder.ondataavailable = (e) => {
-      audioChunks.push(e.data);
-    };
+      recordBtn.innerText = "Stop";
+      console.log("Recording started...");
 
-  } catch (err) {
-    console.log("Mic permission denied", err);
+      mediaRecorder.ondataavailable = (e) => {
+        audioChunks.push(e.data);
+      };
+
+    } catch (err) {
+      console.log("Mic permission denied", err);
+    }
   }
-});
 
-recordBtn.addEventListener("mouseup", () => {
-  if (!mediaRecorder) return;
+  // ⏹ STOP RECORDING
+  else {
+    mediaRecorder.stop();
+    isRecording = false;
 
-  mediaRecorder.stop();
+    recordBtn.innerText = "Start";
 
-  mediaRecorder.onstop = () => {
-    const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-    const audioUrl = URL.createObjectURL(audioBlob);
+    mediaRecorder.onstop = () => {
+      const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+      const audioUrl = URL.createObjectURL(audioBlob);
 
-    audio.src = audioUrl;
+      audio.src = audioUrl;
 
-    console.log("Recording saved");
+      console.log("Recording saved");
 
-    // stop mic stream (important)
-    stream.getTracks().forEach(track => track.stop());
-  };
+      // stop mic properly
+      stream.getTracks().forEach(track => track.stop());
+    };
+  }
 });
